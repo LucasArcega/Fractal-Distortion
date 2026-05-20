@@ -1,0 +1,35 @@
+---
+description: JUCE Grid + FlexBox — layout de UI (evitar math manual e armadilhas de preferred size)
+globs: Source/**/*.cpp
+alwaysApply: false
+---
+
+# Layout UI (JUCE) — Fractal-Distortion
+
+## Hierarquia
+
+- **`juce::Grid`**: regiões grandes (painéis, colunas IN | CENTRO | OUT, título + corpo). Tracks com `Grid::Fr` (**só inteiros** neste JUCE) ou `Grid::Px`; gaps com `columnGap` / `rowGap` em `Px`.
+- **`juce::FlexBox`**: **dentro** de cada célula — filas de controlos, colunas label+knob, faixas de medidores.
+- Evitar **rects manuais** (`removeFromLeft`, `setBounds` por coordenadas) quando Grid/Flex exprimem a mesma intenção.
+
+## O que não fazer (anti-padrões)
+
+- **Não** pré-calcular larguras com `jlimit`/`jmax` em `resized()` só para imitar o flex — isso duplica a política do layout e cria “números mágicos” espalhados. Preferir **`FlexItem::withMinWidth` / `withMaxWidth` / `withFlex(flexGrow, flexShrink, flexBasis)`** (e gaps com `FlexItem().withWidth(n)`).
+- **Não** usar `alignItems::center` em **`FlexDirection::column`** com **Sliders rotativos** (ou outros widgets com **largura preferida 0**): o eixo transversal fica com largura 0 → **invisível**. Usar **`AlignItems::stretch`** ou largura explícita no `FlexItem` / `alignSelf` por widget.
+- **Não** usar `Fr(1.0f)` em `Grid::Fr` — nesta versão do JUCE `Fr` não aceita `float`; usar inteiros (ex. `Fr(100)` e `Fr(48)` para proporções).
+- **Não** usar `GridItem::withColSpan` se não existir no teu `GridItem` — usar **`withArea(rowStart, colStart, rowEnd, colEnd)`** com linhas de grelha (ex. título a duas colunas: `withArea(1, 1, 2, 3)` com 2 colunas explícitas).
+
+## Constantes e legibilidade
+
+- **Magic numbers** de espaçamento (gaps, alturas de label, `textBox` de rotaries) → agrupar no topo do `.cpp` em `namespace { constexpr … }` ou `struct Layout { static constexpr … };` com **nomes** (`kGapSm`, `kRotaryTextBoxH`), não valores soltos no meio do layout.
+- Desenhos decorativos (ex. linha divisória) alinhados ao layout: derivar posições de **`getBounds()`** dos filhos após `performLayout`, não de literais copiados do padding “de cabeça”.
+
+## Z-order e clipping
+
+- Filhos adicionados **por último** pintam por cima. Se dois painéis partilharem a mesma zona por arredondamento, **`toFront(false)`** só como último recurso documentado; o ideal é o layout não se sobrepor.
+- `paint()` do painel não substitui o desenho dos filhos se a hierarquia estiver correta; suspeitar primeiro de **bounds zero** / **alignItems center + preferred 0**.
+
+## Quando math manual é aceitável
+
+- Pós-processamento **local** depois do flex (ex. “quadrado útil” do rotary + `TextBoxBelow`) — desde que **não** substitua a distribuição principal de espaço.
+- Casos que **JUCE ainda não modela** bem (ex. regra de produto muito específica) — documentar num comentário **curto** o “porquê”, não só o “o quê”.

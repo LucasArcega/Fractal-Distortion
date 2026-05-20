@@ -1,0 +1,22 @@
+# clang-tidy (opcional): usar com compile_commands.json, ex.:
+#   clang-tidy -p build Source/PluginProcessor.cpp
+# Filtra para o nosso código; dependências em build/_deps são ignoradas pelo HeaderFilterRegex.
+
+Checks: >
+  -*,
+  bugprone-use-after-move,
+  bugprone-dangling-handle,
+  bugprone-branch-clone,
+  cppcoreguidelines-init-variables,
+  cppcoreguidelines-pro-type-member-init,
+  modernize-use-nullptr,
+  performance-for-range-copy,
+  performance-move-const-arg,
+  readability-braces-around-statements,
+  readability-container-size-empty,
+  readability-redundant-string-init
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*/(Source|Tests)/'
+
+FormatStyle: none

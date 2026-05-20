@@ -1,0 +1,18 @@
+---
+description: Clean code C++ (Fractal-Distortion) — estilo, audio thread, ownership
+globs: "{Source,Tests}/**/*.{cpp,h,hpp}"
+alwaysApply: false
+---
+
+# C++ — clean code neste repositório
+
+Detalhes: [`Plans/00-cpp-clean-code.md`](Plans/00-cpp-clean-code.md) (raiz do repo).
+
+## Resumo para o agente
+
+- **Formatação:** `.clang-format`; **análise:** `.clang-tidy` + `compile_commands.json`.
+- **Nomes claros** (unidades: ms, dB, linear); **const** por defeito; conversões alinhadas a JUCE/MSVC (`float` + literal `f` quando aplicável).
+- **`processBlock`:** sem alocações, sem locks, sem UI — fila áudio→UI como em [`Plans/00-convencoes-repo-ui-testes.md`](Plans/00-convencoes-repo-ui-testes.md).
+- **Ownership:** `unique_ptr` / regra de zero; cuidado com `JUCE_DECLARE_NON_COPYABLE...` em *widgets* membro por valor (MSVC) — ver convenções.
+- **Includes:** header do `.cpp` primeiro; API mínima nos `.h`.
+- **Comentários:** porquê, não o óbvio; não expandir refactors fora do pedido (ver regra global).

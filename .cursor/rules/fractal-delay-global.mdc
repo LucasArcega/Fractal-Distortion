@@ -1,0 +1,48 @@
+---
+description: Workflow global (compilar antes de concluir) + JUCE/MSVC/CMake — Fractal-Distortion
+alwaysApply: true
+---
+
+# Workflow global (aplica-se a todas as tarefas neste workspace)
+
+## ClickUp + GitHub (tickets)
+
+- Fluxo branch/PR/ligação ao ClickUp: [`.cursor/skills/clickup-github-ticket-workflow/SKILL.md`](../skills/clickup-github-ticket-workflow/SKILL.md) (MCP `user-clickup`, `gh`).
+
+## Antes de dar uma tarefa por concluída
+
+- Se mudaste **`CMakeLists.txt`**, **`Source/**`**, **`Tests/**`**, ou **`scripts/*.bat`** relevantes para o build: **tenta compilar** com o fluxo do repo (`cmake --build build` no ambiente MSVC+Ninja correcto, ou `scripts/build-debug.bat` / `scripts/all-debug.bat`). **Corrige erros de compilação** (e `ctest` se afectaste lógica testada) antes de declarar a tarefa **feita**.
+- Se o ambiente do agente **não** tiver toolchain (ex.: sem `VsDevCmd`) e o build falhar por isso: **diz explicitamente** que é bloqueio de ambiente, lista o que falhou, e deixa os passos para o utilizador reproduzir localmente — **não** assumes que compila sem tentar quando o shell tem acesso ao compilador.
+- **`ctest` / cache CMake:** no Windows, **`scripts\all-debug.bat`** e **`scripts\configure-ninja.bat`** usam `scripts\cmake-debug-cache-flags.bat` (inclui **`FRACTAL_DELAY_CTEST_INCLUDE_GUI=ON`**) — **não** peças ao utilizador comandos `cmake` extra para isso. `cmake` manual não aplica essas flags; o default do `CMakeLists` mantém **`[gui]`** fora do `ctest` para quem não usa os scripts. **`SKIP_FRACTAL_DELAY_GUI_TESTS=1`** continua a aplicar-se só ao correr o `.exe` de testes manualmente em ambientes sem GUI.
+- Usa **`compile_commands.json`** (gerado no `build/` com `CMAKE_EXPORT_COMPILE_COMMANDS`) no **clangd** do Cursor para apanhar erros cedo; para análise extra há **`.clang-tidy`** na raíz (`clang-tidy -p build Source/...`). O **GitHub Actions** (`.github/workflows/ci.yml`) corre o mesmo *tidy* após build em cada push/PR.
+
+---
+
+# JUCE / C++ / CMake (este repositório)
+
+## Antes de assumir uma API JUCE
+
+- O projecto fixa o JUCE com **FetchContent** (`JUCE_TAG` no `CMakeLists.txt`). **Não confiar em memória** de outra versão.
+- Para nomes de métodos, enums ou construtores: **confirmar no código-fonte** em `build/_deps/juce-src/` (`grep` nos headers sob `modules/`) **ou** documentação **da mesma versão** do tag.
+- Preferir APIs que o JUCE não depreca: por exemplo **`juce::Font(juce::FontOptions{…})`**; **`juce::Font::getDefaultMonospacedFontName()`** (com *d* em Monospaced), não `Monospace`.
+
+## MSVC + Windows
+
+- Builds **Ninja + MSVC** precisam do ambiente Visual Studio (**`VsDevCmd`** / *x64 Native Tools* / `scripts/setup-vs-ninja.bat`). Sem isso: STL/SDK “não encontrados”, links estranhos, etc.
+- Avisos **C4244** / conversões: literais `f` onde a API pede `float`; confirma assinaturas em headers JUCE antes de passar `ModifierKeys` ou argumentos opcionais.
+
+## CMake / plugin
+
+- **`FRACTAL_DELAY_COPY_PLUGIN_AFTER_BUILD`**: cópia para `Program Files\...\VST3` costuma exigir admin; default **OFF**.
+- Testes que incluem `Source/*` com **`JuceHeader.h`**: include de `…_artefacts/JuceLibraryCode` no alvo de testes (ver `CMakeLists.txt`); replicar o padrão para novos executáveis de teste.
+- **`add_test`**: usar **`$<TARGET_FILE:…>`** com geradores multi-config (Visual Studio).
+
+## C++ — clean code
+
+- Guia curto alinhado ao repo: [`Plans/00-cpp-clean-code.md`](Plans/00-cpp-clean-code.md) (activa também a regra Cursor `cpp-clean-code` em `Source/` e `Tests/`).
+
+## O que não fazer
+
+- Não inventar nomes de API JUCE (`getDefault*`).
+- Não misturar **dB** vs **linear** sem `juce::Decibels::*` explícito no DSP.
+- Não expandir escopo (refactors grandes) quando a tarefa é local.

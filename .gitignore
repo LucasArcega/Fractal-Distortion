@@ -1,0 +1,28 @@
+# Build
+build/
+cmake-build-*/
+out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.VC.db*
+CMakeUserPresets.json
+
+# Cursor / clangd
+.cache/
+.claude/
+compile_commands.json
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Plugin instalado no sistema (gerado pelo build com COPY_PLUGIN_AFTER_BUILD=ON)
+*.vst3
+*.component
+*.aaxplugin
