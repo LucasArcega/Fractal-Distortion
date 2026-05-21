@@ -55,12 +55,12 @@ public:
     void paint(juce::Graphics& g) override;
 
     /**
-     * @brief Atualiza medidores visuais com novos picos de entrada/Output.
+     * @brief Atualiza medidores visuais com novos picos de Input/Output.
      *
      * @details Chamado por PluginEditor::idle() quando recebe mensagens audio→UI.
      * Converte amplitudes lineares para dB e atualiza MeterCluster.
      *
-     * @param peakInLinear  Pico de entrada (linear, 0…∞)
+     * @param peakInLinear  Pico de Input (linear, 0…∞)
      * @param peakOutLinear Pico de Output geral (max L/R, linear, 0…∞)
      */
     void updateOutputMetering(float peakInLinear, float peakOutLinear);
@@ -140,7 +140,7 @@ private:
         /**
          * @brief Atualiza níveis dos medidores e labels de pico.
          *
-         * @param peakInLinear  Amplitude de entrada (linear)
+         * @param peakInLinear  Amplitude de Input (linear)
          * @param peakOutLinear Amplitude de Output (linear)
          */
         void updateLevels(float peakInLinear, float peakOutLinear);

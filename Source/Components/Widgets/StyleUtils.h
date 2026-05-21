@@ -58,11 +58,26 @@ namespace Colors
 
 } // namespace Colors
 
+
+namespace FontSizes
+{
+    /** @brief Tamanho de fonte para títulos de seção (ex: "DELAY CORE"). */
+    constexpr float SectionTitle = 16.0f;
+    /** @brief Tamanho de fonte para títulos de seção maiores (ex: "OUTPUT"). */
+    constexpr float SectionTitleLarge = 18.0f;
+    /** @brief Tamanho de fonte para labels de parâmetros (ex: "MODE", "SYNC"). */
+    constexpr float ParameterLabel = 12.0f;
+    
+    /** @brief Tamanho de fonte para labels de parâmetros menores ou secundários. */
+    constexpr float ParameterLabelSmall = 10.0f;
+
+} // namespace FontSizes
+
 /**
  * @brief Aplica estilo padrão a um knob rotativo (Slider).
  *
  * @details Estilo visual:
- * - RotaryVerticalDrag (arrastar vertical para mudar valor)
+ * - Rotary (arrastar no sentido do slider)
  * - Arco de 1.15π a 2.85π (deixa gap inferior)
  * - TextBox abaixo do knob (72px × 22px)
  * - Cores customizáveis (accent, borda)
@@ -71,16 +86,12 @@ namespace Colors
  * @param accentColour Cor do preenchimento do knob (ex: AccentOrange, AccentPurple)
  * @param interactive  Se false, desabilita cliques (knobs decorativos)
  *
- * @note Este estilo é usado em DelayCorePanel, OutputPanel e CharacterPanel.
- *
- * @see DelayCorePanel::styleRotary (código original duplicado)
- * @see OutputPanel::styleRotary (código original duplicado)
  */
 inline void styleRotaryKnob(juce::Slider& slider,
                             juce::uint32 accentColour = Colors::AccentOrange,
                             bool interactive = true)
 {
-    slider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+    slider.setSliderStyle(juce::Slider::Rotary);
     slider.setRotaryParameters(juce::MathConstants<float>::pi * 1.15f,
                                juce::MathConstants<float>::pi * 2.85f,
                                true);
@@ -88,7 +99,7 @@ inline void styleRotaryKnob(juce::Slider& slider,
 
     // Cores do knob
     slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(accentColour));
-    slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(Colors::Border));
+    slider.setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(Colors::AccentPurple));
     slider.setColour(juce::Slider::thumbColourId, juce::Colours::white);
 
     // Cores da TextBox
@@ -135,7 +146,7 @@ inline void styleComboBox(juce::ComboBox& combo, juce::uint32 outlineColour = Co
 inline void styleSectionTitle(juce::Label& label,
                               const juce::String& text,
                               juce::uint32 accentColour = Colors::AccentOrange,
-                              float fontSize = 11.0f)
+                              float fontSize = FontSizes::SectionTitle)
 {
     label.setText(text, juce::dontSendNotification);
     label.setJustificationType(juce::Justification::centredLeft);
@@ -191,6 +202,39 @@ inline void stylePeakLabel(juce::Label& label,
     label.setJustificationType(juce::Justification::centred);
     label.setFont(juce::Font(juce::FontOptions(fontSize)));
     label.setColour(juce::Label::textColourId, juce::Colour(textColour));
+}
+
+/**
+ * @brief Aplica estilo padrão a um slider linear vertical (ex: ganho de entrada/saída).
+ *
+ * @param slider       Slider a estilizar
+ * @param accentColour Cor da track (padrão: AccentOrange)
+ */
+inline void styleLinearSlider(juce::Slider& slider,
+                              juce::uint32 accentColour = Colors::AccentOrange)
+{
+    slider.setSliderStyle(juce::Slider::LinearVertical);
+    slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 80, 22);
+    slider.setColour(juce::Slider::backgroundColourId, juce::Colour(0xff22262e));
+    slider.setColour(juce::Slider::trackColourId, juce::Colour(accentColour));
+    slider.setColour(juce::Slider::thumbColourId, juce::Colour(Colors::TextPrimary));
+    slider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::white);
+    slider.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colour(Colors::InputBackground));
+    slider.setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+}
+
+/**
+ * @brief Aplica estilo a um título de coluna pequeno (ex: "IN", "OUT").
+ *
+ * @param label Label a estilizar
+ * @param text  Texto do título
+ */
+inline void styleColumnTitle(juce::Label& label, const juce::String& text)
+{
+    label.setText(text, juce::dontSendNotification);
+    label.setJustificationType(juce::Justification::centred);
+    label.setFont(juce::Font(juce::FontOptions(14.f)).boldened());
+    label.setColour(juce::Label::textColourId, juce::Colour(Colors::TextPrimary));
 }
 
 } // namespace GUI

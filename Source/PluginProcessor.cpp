@@ -1,84 +1,40 @@
-#pragma once
-
-#include <JuceHeader.h>
-
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "Utils/ConversionUtils.h"
 
+
+// Repons·vel por inicializar os parametros do plugin, definindo seus intervalos, valores padr„o e
+// nomes. Esses par‚metros ser„o usados para controlar o comportamento do plugin e ser„o expostos na
+// interface do usu·rio.
 juce::AudioProcessorValueTreeState::ParameterLayout FractalDistortionAudioProcessor::createParameterLayout()
 {
- 
-    auto range = juce::NormalisableRange<float>(-60.f, 12.f, 0.1f, 0.45f);
-    auto attrs = juce::AudioParameterFloatAttributes{}
-                     .withStringFromValueFunction(fractal_utils::gainDbToText)
-                     .withValueFromStringFunction(fractal_utils::textToGainDb);
+    const auto range = juce::NormalisableRange<float>(-60.f, 12.f, 0.1f, 0.45f);
+    const float defaultGainValue = 0.f;
+    const auto driveNormalizedRange = juce::NormalisableRange<float>(0.0f, 36.0f, 0.1f, 0.45f);
+    const float driveStartValue = 2.f;
 
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "inputGainDb", 1 }, juce::translate("Entrada"), range, 0.f, attrs));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{ "outputGainDb", 1 }, juce::translate("Saida"), range, 0.f, attrs));
-
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"inputGainDb", 1},
+                                                           "Input", range, defaultGainValue));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"outputGainDb", 1},
+                                                           "Output", range, defaultGainValue));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::driveDb, "Drive",
+                                                           driveNormalizedRange, driveStartValue));
     return layout;
 }
 
-
-/**
- * @brief Construtor do processador.
- *
- * @details Configura layout de buses (est√©reo in/out) e inicializa o APVTS.
- * O layout de par√¢metros √© criado via createParameterLayout().
- *
- * @note isBusesLayoutSupported() limita o plugin a mono ou est√©reo apenas.
- */
 FractalDistortionAudioProcessor::FractalDistortionAudioProcessor()
     : AudioProcessor(BusesProperties()
-          .withInput(juce::translate("Entrada"), juce::AudioChannelSet::stereo(), true)
-          .withOutput(juce::translate("Saida"), juce::AudioChannelSet::stereo(), true))
-    , apvts(*this, nullptr, "PARAMS", createParameterLayout())
+          .withInput ("Input",  juce::AudioChannelSet::stereo(), true)
+          .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
+      apvts(*this, nullptr, "PARAMS", createParameterLayout())
 {
 }
 
-/**
- * @brief Prepara o DSP para processamento (chamado ao iniciar playback ou mudar sample rate).
- *
- * @details Inicializa:
- * - Taxa de amostragem atual
- * - Tamanho da janela RMS (~43ms, padr√£o Airwindows)
- * - Reseta medidores de pico
- *
- * @param sampleRate      Taxa de amostragem do host (ex: 44100, 48000)
- * @param samplesPerBlock Tamanho m√°ximo do bloco de √°udio
- *
- * @note Esta √© a √öNICA fun√ß√£o que aloca mem√≥ria. processBlock() nunca aloca.
- */
 void FractalDistortionAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
-    juce::ignoreUnused(samplesPerBlock);
-    currentSampleRate = sampleRate > 0.0 ? sampleRate : 44100.0;
-    rmsSize  = static_cast<int>((1882.0 / 44100.0) * currentSampleRate);
-    rmsCount = 0;
-    peakIn        = 0.f;
-    peakOut       = 0.f;
-    peakOutLeft  = 0.f;
-    peakOutRight = 0.f;
+    juce::ignoreUnused(sampleRate, samplesPerBlock);
 }
 
-/**
- * @brief Verifica se o layout de buses √© suportado.
- *
- * @details Este plugin suporta APENAS:
- * - Mono ‚Üí Mono
- * - Est√©reo ‚Üí Est√©reo
- *
- * Layouts assim√©tricos (ex: mono‚Üíest√©reo) s√£o rejeitados.
- *
- * @param layouts Layout proposto pelo host
- * @return true se suportado, false caso contr√°rio
- */
 bool FractalDistortionAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
     const auto& out = layouts.getMainOutputChannelSet();
@@ -87,97 +43,29 @@ bool FractalDistortionAudioProcessor::isBusesLayoutSupported(const BusesLayout& 
     return out == juce::AudioChannelSet::stereo() || out == juce::AudioChannelSet::mono();
 }
 
-/**
- * @brief Processa um bloco de √°udio (real-time, thread cr√≠tica).
- *
- * @details Fluxo de processamento por amostra:
- * 1. Aplica ganho de entrada (inputGainDb)
- * 2. Mede picos de entrada
- * 3. Aplica ganho de Output (outputGainDb)
- * 4. Mede picos de Output (L, R, max)
- * 5. A cada ~43ms (rmsSize amostras), envia mensagens para UI
- *
- * @param buffer Buffer de √°udio (modificado in-place)
- * @param midi   Buffer MIDI (ignorado, plugin √© audio-only)
- *
- * @warning NUNCA aloque mem√≥ria, trave locks ou chame fun√ß√µes bloqueantes aqui!
- */
+// Aqui processamos o audio, aplicando os efeitos e alteraÁıes necess·rias de acordo com os
+// paramentros definidos. O ganho de entrada e saÌda È aplicado ao buffer de ·udio, e o
+// processamento de distorÁ„o pode ser adicionado posteriormente usando o valor do par‚metro
+// "driveDb".
 void FractalDistortionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ignoreUnused(midi);
     juce::ScopedNoDenormals noDenormals;
 
-    const float inGain  = juce::Decibels::decibelsToGain(
-        apvts.getRawParameterValue("inputGainDb")->load());
-    const float outGain = juce::Decibels::decibelsToGain(
-        apvts.getRawParameterValue("outputGainDb")->load());
+    const float driveGain = juce::Decibels::decibelsToGain(apvts.getRawParameterValue("driveDb")->load());
+    const float inGain  = juce::Decibels::decibelsToGain(apvts.getRawParameterValue("inputGainDb")->load());
+    const float outGain = juce::Decibels::decibelsToGain(apvts.getRawParameterValue("outputGainDb")->load());
 
     buffer.applyGain(inGain);
-
-    const int nCh = buffer.getNumChannels();
-    const int nSm = buffer.getNumSamples();
-
-    for (int ch = 0; ch < nCh; ++ch)
-    {
-        const float* r = buffer.getReadPointer(ch);
-        for (int i = 0; i < nSm; ++i)
-            peakIn = juce::jmax(peakIn, std::abs(r[i]));
-    }
-
     buffer.applyGain(outGain);
 
-    // Picos de Output: medem o sinal com gain de Output aplicado (o que vai ao conversor D/A).
-    if (nCh >= 1)
-    {
-        const float* p0 = buffer.getReadPointer(0);
-        for (int i = 0; i < nSm; ++i)
-            peakOutLeft = juce::jmax(peakOutLeft, std::abs(p0[i]));
-    }
-    if (nCh >= 2)
-    {
-        const float* p1 = buffer.getReadPointer(1);
-        for (int i = 0; i < nSm; ++i)
-            peakOutRight = juce::jmax(peakOutRight, std::abs(p1[i]));
-    }
-    else
-    {
-        // Mono: espelha L no R para os dois medidores do rodap√©
-        peakOutRight = peakOutLeft;
-    }
+    //Aplicar drive simples, transformar em mÈtodo depois:
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
+        auto *samples = buffer.getWritePointer(channel);
 
-    peakOut = juce::jmax(peakOutLeft, peakOutRight);
-
-    rmsCount += buffer.getNumSamples();
-
-    if (rmsCount >= rmsSize)
-    {
-        AudioToUIMessage msg;
-
-        msg.what = AudioToUIMessage::PEAK_IN;
-        msg.newValue = peakIn;
-        audioToUI.push(msg);
-
-        msg.what = AudioToUIMessage::PEAK_OUT;
-        msg.newValue = peakOut;
-        audioToUI.push(msg);
-
-        msg.what = AudioToUIMessage::PEAK_OUT_LEFT;
-        msg.newValue = peakOutLeft;
-        audioToUI.push(msg);
-
-        msg.what = AudioToUIMessage::PEAK_OUT_RIGHT;
-        msg.newValue = peakOutRight;
-        audioToUI.push(msg);
-
-        msg.what = AudioToUIMessage::INCREMENT;
-        msg.newValue = 0.f;
-        audioToUI.push(msg);
-
-        peakIn         = 0.f;
-        peakOut        = 0.f;
-        peakOutLeft    = 0.f;
-        peakOutRight   = 0.f;
-        rmsCount       = 0;
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample) {
+            samples[sample] *= std::tanh(samples[sample]* driveGain);
+        }
     }
 }
 

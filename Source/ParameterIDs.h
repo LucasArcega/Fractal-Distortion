@@ -1,8 +1,8 @@
-const autoonce
+#pragma once
 
 #include <JuceHeader.h>
 
-namespace ParametersIDs 
+namespace ParameterIDs
 {
-	inline constexpr auto driveDb = juce::ParameterID{"driveDb", 1};
+	inline const juce::ParameterID driveDb{"driveDb", 1};
 }

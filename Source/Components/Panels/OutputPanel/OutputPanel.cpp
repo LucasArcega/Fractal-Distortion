@@ -236,9 +236,9 @@ OutputPanel::OutputPanel(FractalDistortionAudioProcessor& processor)
     addAndMakeVisible(meters);
 
     // Sliders aninhados em `controls` — APVTS liga aos membros concretos, não ao painel.
-    mixKnobAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.getAPVTS(), "delayMix", controls.mix.mixKnob);
-    attachWetMixPercentDisplay(controls.mix.mixKnob);
+    //mixKnobAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+    //    audioProcessor.getAPVTS(), "delayMix", controls.mix.mixKnob);
+    //attachWetMixPercentDisplay(controls.mix.mixKnob);
 
     gainKnobAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.getAPVTS(), "outputGainDb", controls.gain.gainKnob);
