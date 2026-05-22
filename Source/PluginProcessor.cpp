@@ -13,9 +13,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout FractalDistortionAudioProces
     const float driveStartValue = 2.f;
 
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"inputGainDb", 1},
+    layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::inputGainDb,
                                                            "Input", range, defaultGainValue));
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"outputGainDb", 1},
+    layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::outputGainDb,
                                                            "Output", range, defaultGainValue));
     layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::driveDb, "Drive",
                                                            driveNormalizedRange, driveStartValue));

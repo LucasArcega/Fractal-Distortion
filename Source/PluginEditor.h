@@ -6,6 +6,7 @@
 #include "Components/Panels/DistortionPanel/DistortionPanel.h"
 #include "Components/Widgets/FooterBar/FooterBar.h"
 #include "Components/Widgets/StyleUtils.h"
+#include "Components/Panels/GainPanel/GainPanel.h"
 
 /* Header do nosso editor. Equivalente a parte visual principal do programa*/
 
@@ -33,19 +34,13 @@ private:
     GUI::FooterBar   footerBar;
     GUI::OutputPanel outputPanel;
     DistortionPanel  distortionPanel;
+    
+    GainPanel        inputGainPanel;
+    GainPanel        outputGainPanel;
 
     juce::Component inColumn;
     juce::Component centerColumn;
     juce::Component outColumn;
-
-    juce::Label  inTitle;
-    juce::Label  inLabel;
-    juce::Slider inputSlider;
-
-    juce::Label outTitle;
-    juce::Label outLabel;
-
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> inputAttachment;
 
     std::unique_ptr<IdleTimer> idleTimer;
 

@@ -13,53 +13,6 @@ namespace
     constexpr int kFooterGap = 8;
 
     /**
-     * @brief Layout vertical da coluna IN: título + label de pico + slider.
-     */
-    void layoutSideStrip(juce::Component& column,
-                         juce::Label& title,
-                         juce::Label& peak,
-                         juce::Slider& slider)
-    {
-        auto r = column.getLocalBounds().toFloat();
-        juce::FlexBox fb;
-        fb.flexDirection  = juce::FlexBox::Direction::column;
-        fb.justifyContent = juce::FlexBox::JustifyContent::flexStart;
-        fb.alignItems     = juce::FlexBox::AlignItems::stretch;
-
-        constexpr float titleH     = 20.f;
-        constexpr float peakH      = 22.f;
-        constexpr float sliderMinH = 120.f;
-
-        fb.items.add(juce::FlexItem(title).withHeight(titleH));
-        fb.items.add(juce::FlexItem(peak).withHeight(peakH));
-        fb.items.add(juce::FlexItem(slider).withFlex(1.f).withMinHeight(sliderMinH)
-                                           .withMaxWidth((float) column.getWidth()));
-
-        fb.performLayout(r);
-    }
-
-    /**
-     * @brief Layout da coluna OUT: título + label de pico (sem slider).
-     */
-    void layoutOutPeakColumn(juce::Component& column, juce::Label& title, juce::Label& peak)
-    {
-        auto r = column.getLocalBounds().toFloat();
-        juce::FlexBox fb;
-        fb.flexDirection  = juce::FlexBox::Direction::column;
-        fb.justifyContent = juce::FlexBox::JustifyContent::flexStart;
-        fb.alignItems     = juce::FlexBox::AlignItems::stretch;
-
-        constexpr float titleH = 20.f;
-        constexpr float peakH  = 22.f;
-
-        fb.items.add(juce::FlexItem(title).withHeight(titleH));
-        fb.items.add(juce::FlexItem(peak).withHeight(peakH));
-        fb.items.add(juce::FlexItem().withFlex(1.f));
-
-        fb.performLayout(r);
-    }
-
-    /**
      * @brief Layout da coluna central: estica o painel para preencher toda a área.
      */
     void layoutCenterColumn(juce::Component& column, juce::Component& panel)
@@ -82,7 +35,6 @@ namespace
  * 2. Cria e adiciona componentes de chrome (header, footer)
  * 3. Cria colunas da grid central (IN | CENTER | OUT)
  * 4. Cria painéis inferiores (Delay Core, Character, Output)
- * 5. Cria attachments APVTS para sliders
  * 6. **ÚLTIMO**: Inicia IdleTimer (~30Hz) para drenar fila audio→UI
  *
  * @param p Referência ao processador (deve sobreviver ao editor)
@@ -94,6 +46,8 @@ FractalDistortionAudioProcessorEditor::FractalDistortionAudioProcessorEditor(Fra
     , audioProcessor(p)
     , outputPanel(p)
     , distortionPanel(p.getAPVTS())
+    , inputGainPanel(p.getAPVTS(), "IN", "IN: ---", ParameterIDs::inputGainDb.getParamID())
+    , outputGainPanel(p.getAPVTS(), "OUT", "OUT: ---", ParameterIDs::outputGainDb.getParamID())
 {
     setSize(960, 684);
 
@@ -103,24 +57,11 @@ FractalDistortionAudioProcessorEditor::FractalDistortionAudioProcessorEditor(Fra
     addAndMakeVisible(centerColumn);
     addAndMakeVisible(outColumn);
 
-    GUI::styleColumnTitle(inTitle, "IN");
-    GUI::stylePeakLabel(inLabel, "IN: ---", GUI::Colors::TextMuted, 12.f);
-    GUI::styleLinearSlider(inputSlider);
-    inColumn.addAndMakeVisible(inTitle);
-    inColumn.addAndMakeVisible(inLabel);
-    inColumn.addAndMakeVisible(inputSlider);
-
+    inColumn.addAndMakeVisible(inputGainPanel);
     centerColumn.addAndMakeVisible(distortionPanel);
-
-    GUI::styleColumnTitle(outTitle, "OUT");
-    GUI::stylePeakLabel(outLabel, "OUT: ---", GUI::Colors::TextMuted, 12.f);
-    outColumn.addAndMakeVisible(outTitle);
-    outColumn.addAndMakeVisible(outLabel);
-
+    outColumn.addAndMakeVisible(outputGainPanel);
+    
     addAndMakeVisible(outputPanel);
-
-    inputAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.getAPVTS(), "inputGainDb", inputSlider);
 
     idleTimer = std::make_unique<IdleTimer>(this);
     idleTimer->startTimer(1000 / 30);
@@ -189,9 +130,9 @@ void FractalDistortionAudioProcessorEditor::resized()
 
     grid.performLayout(bounds);
 
-    layoutSideStrip(inColumn, inTitle, inLabel, inputSlider);
+    inputGainPanel.setBounds(inColumn.getLocalBounds());
     layoutCenterColumn(centerColumn, distortionPanel);
-    layoutOutPeakColumn(outColumn, outTitle, outLabel);
+    outputGainPanel.setBounds(outColumn.getLocalBounds());
 }
 
 void FractalDistortionAudioProcessorEditor::idle()
