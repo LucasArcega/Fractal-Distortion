@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <Utils/ConversionUtils.h>
 
 /// <summary>
 /// Component que representa um painel de controle de ganho (input ou output).
@@ -44,10 +45,23 @@ public:
         fb.performLayout(r);
     }
 
+    void updatePeakLabel(float linearPeak) {
+
+        // Usado para decaimento do valor de pico, para evitar que o valor fique oscilando muito
+        // rapidamente e seja difícil de ler.
+        constexpr float decayFactor = 0.85f;
+        currentPeak = juce::jmax(linearPeak, currentPeak * decayFactor);
+        
+        const juce::String text = fractal_utils::formatPeakReadout(currentPeak);
+        gainLabel.setText(text, juce::dontSendNotification);
+    }
+
 private:
     juce::Label gainTitle;
     juce::Label gainLabel;
     juce::Slider gainSlider;
+
+    float currentPeak = 0.f;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GainPanel)

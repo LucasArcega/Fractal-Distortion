@@ -44,8 +44,6 @@ private:
 
     std::unique_ptr<IdleTimer> idleTimer;
 
-    float currentPeakIn       = 0.f;
-    float currentPeakOut      = 0.f;
     float currentPeakOutLeft  = 0.f;
     float currentPeakOutRight = 0.f;
 

@@ -43,21 +43,28 @@ bool FractalDistortionAudioProcessor::isBusesLayoutSupported(const BusesLayout& 
     return out == juce::AudioChannelSet::stereo() || out == juce::AudioChannelSet::mono();
 }
 
-// Aqui processamos o audio, aplicando os efeitos e alterações necessárias de acordo com os
-// paramentros definidos. O ganho de entrada e saída é aplicado ao buffer de áudio, e o
-// processamento de distorção pode ser adicionado posteriormente usando o valor do parâmetro
-// "driveDb".
+/// <summary>
+/// Basicamente a coração do processamento do audio. Aqui é onde a mágica acontece. O método
+/// processBlock é chamado para cada bloco de áudio que precisa ser processado. Ele recebe um buffer
+/// de áudio e um buffer de MIDI (que não estamos usando neste caso). Dentro deste método, aplicamos
+/// o ganho de entrada, a distorção e o ganho de saída ao buffer de áudio. Também atualizamos os
+/// picos de entrada e saída para monitoramento.
+/// </summary>
+/// <param name="buffer"></param>
+/// <param name="midi"></param>
 void FractalDistortionAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ignoreUnused(midi);
     juce::ScopedNoDenormals noDenormals;
 
+    // Obter os valores de ganho dos parâmetros, convertendo de dB para ganho linear
     const float driveGain = juce::Decibels::decibelsToGain(apvts.getRawParameterValue("driveDb")->load());
     const float inGain  = juce::Decibels::decibelsToGain(apvts.getRawParameterValue("inputGainDb")->load());
     const float outGain = juce::Decibels::decibelsToGain(apvts.getRawParameterValue("outputGainDb")->load());
 
     buffer.applyGain(inGain);
-    buffer.applyGain(outGain);
+    // Atualizar o pico de entrada antes de aplicar a distorção
+    peakInputLinear.store(buffer.getMagnitude(0, buffer.getNumSamples()));
 
     //Aplicar drive simples, transformar em método depois:
     for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
@@ -67,6 +74,10 @@ void FractalDistortionAudioProcessor::processBlock(juce::AudioBuffer<float>& buf
             samples[sample] *= std::tanh(samples[sample]* driveGain);
         }
     }
+
+    buffer.applyGain(outGain);
+    // Atualizar o pico de saída após aplicar a distorção e o ganho de saída
+    peakOutputLinear.store(buffer.getMagnitude(0, buffer.getNumSamples()));
 }
 
 juce::AudioProcessorEditor* FractalDistortionAudioProcessor::createEditor()

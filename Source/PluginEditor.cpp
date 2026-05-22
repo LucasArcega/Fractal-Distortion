@@ -137,7 +137,7 @@ void FractalDistortionAudioProcessorEditor::resized()
 
 void FractalDistortionAudioProcessorEditor::idle()
 {
-    // TODO: implementar metering quando PluginProcessor expuser os níveis de pico.
-    // outputPanel.updateOutputMetering(peakIn, peakOut);
+    inputGainPanel.updatePeakLabel(audioProcessor.getPeakInputLinear());
+    outputGainPanel.updatePeakLabel(audioProcessor.getPeakOutputLinear());
 }
 

@@ -30,12 +30,16 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
+    float getPeakInputLinear() const noexcept { return peakInputLinear.load(); }
+    float getPeakOutputLinear() const noexcept { return peakOutputLinear.load(); }
+
     juce::AudioProcessorValueTreeState& getAPVTS() noexcept { return apvts; }
     const juce::AudioProcessorValueTreeState& getAPVTS() const noexcept { return apvts; }
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-
+    std::atomic<float> peakInputLinear {0.f};
+    std::atomic<float> peakOutputLinear {0.f};
     juce::AudioProcessorValueTreeState apvts;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FractalDistortionAudioProcessor)
