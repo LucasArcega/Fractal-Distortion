@@ -5,3 +5,4 @@ BreakBeforeBraces: Attach
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: Never
 ColumnLimit: 100
+NamespaceIndentation: All
