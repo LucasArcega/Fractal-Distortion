@@ -1,5 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
+#include <DSP/TubeDistortion.h>
+#include <DSP/DistortionEngine.h>
 
 class FractalDistortionAudioProcessor : public juce::AudioProcessor
 {
@@ -41,6 +43,8 @@ private:
     std::atomic<float> peakInputLinear {0.f};
     std::atomic<float> peakOutputLinear {0.f};
     juce::AudioProcessorValueTreeState apvts;
+    // Vector pois é uma por canal (L/R)
+    std::vector<DSP::DistortionEngine> distortionEngines;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(FractalDistortionAudioProcessor)
 };

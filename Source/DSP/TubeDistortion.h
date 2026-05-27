@@ -5,7 +5,10 @@ namespace DSP {
 
     class TubeDistortion {
     public:
-        void prepare(double newSampleRate) noexcept { sampleRate = newSampleRate }
+        void prepare(double newSampleRate) noexcept {
+            sampleRate = newSampleRate;
+            updateFilters();
+        }
 
         void reset() noexcept {
             hpState = 0.f;
@@ -13,28 +16,38 @@ namespace DSP {
             lpState = 0.f;
         }
 
+        /// <summary>
+        /// Define o ganho de drive em decibéis. O ganho de drive controla a quantidade de distorção
+        /// aplicada ao sinal. NÃO LINEARIZAR ANTES!
+        /// </summary>
+        /// <param name="driveDb">Ganho de drive em decibéis.</param>
         void setDrive(float driveDb) noexcept {
             driveGain = juce::Decibels::decibelsToGain(driveDb);
         }
 
-        void setBias(float newBias) noexcept { bias = juce::jLimit(-0.5f, 0.5f, newBias); }
+        void setBias(float newBias) noexcept { this->bias = juce::jlimit(-0.5f, 0.5f, newBias); }
 
-        void setToneHz(float hz) noexcept { tonehz = juce::jlimit(1000.f, 20000.f, hz); }
+        void setToneHz(float hz) noexcept {
+            this->toneHz = juce::jlimit(1000.f, 20000.f, hz);
+            this->updateFilters();
+        }
 
         float processSample(float input) noexcept {
 
             // Pipeline Tube clássico:
-            //1 - Limpa o sinal antes de dar ganho, removendo rumble e DC indesejado.
+            // 1 - Limpa o sinal antes de dar ganho, removendo rumble e DC indesejado.
             const float filteredInput = highPass(input);
 
             // 2 - Aplica ganho e distorção não linear, simulando a saturação de uma válvula.
-            const float biasedInput = filteredInput + bias;     // Adiciona assimetria
-            
+            const float biasedInput = filteredInput + bias; // Adiciona assimetria
+
             // 3. Amplificação: Empurra o sinal contra o "teto" do circuito
             const float drivenInput = biasedInput * driveGain;
-            
+
             // 4. Ondulação (Waveshaping): Modifica a forma da onda usando a tangente hiperbólica
-            const float saturated = std::tanh(drivenInput);
+            // Satura, mas compensa o ganho na saída para não virar fuzz
+            const float saturated = std::tanh(drivenInput) / std::max(driveGain * 0.5f, 1.f);
+            
 
             // 5. Restauração: Remove o deslocamento DC que a própria distorção gerou.
             // O bias adiciona um deslocamento DC ao sinal, e a saturação pode amplificar esse
@@ -42,11 +55,12 @@ namespace DSP {
             // isso, calculamos o deslocamento DC gerado pela saturação usando a função tanh
             // aplicada ao bias multiplicado pelo ganho de drive. Em seguida, subtraímos esse
             // deslocamento do sinal saturado para restaurar o equilíbrio DC original.
-            const float dcOffset = std::tanh(bias * driveGain);
-            const float corrected = saturated - dcOffset;       // Remove DC gerado
+            const float dcOffset = std::tanh(bias * driveGain) / std::max(driveGain * 0.5f, 1.f);
             
+            const float corrected = saturated - dcOffset; // Remove DC gerado
+
             // 6. Polimento: Suaviza os harmônicos agudos gerados pela saturação
-            const float toned = lowPass(corrected);             // Suaviza agudos
+            const float toned = lowPass(corrected); // Suaviza agudos
 
             return toned;
         }
@@ -65,21 +79,22 @@ namespace DSP {
         }
 
         float highPass(float input) noexcept {
-            
+
             const float signalDifference = this->computeSignalDifference(input, hpLastInput);
-            
+
             // O sinal com memória é a combinação da diferença atual (que captura as mudanças
             // rápidas) e o estado anterior (que mantém a resposta suave). Isso permite que o filtro
             // reaja rapidamente a mudanças no sinal, mas também mantenha uma resposta suave e
             // natural, evitando artefatos indesejados.
             const float signalWithMemory = this->hpState + signalDifference;
-            
+
             // O resultado final é o sinal filtrado, onde o hpAlpha controla a quantidade de
             // filtragem aplicada. O estado do filtro é atualizado para a próxima iteração,
-            // garantindo que o filtro mantenha sua resposta ao longo do tempo. Seu decaimento é suave e exponencial assim como um filtro RC clássico, o que ajuda a evitar
-            // artefatos de filtragem agressiva e mantém a musicalidade do som.
+            // garantindo que o filtro mantenha sua resposta ao longo do tempo. Seu decaimento é
+            // suave e exponencial assim como um filtro RC clássico, o que ajuda a evitar artefatos
+            // de filtragem agressiva e mantém a musicalidade do som.
             const float output = this->hpAlpha * signalWithMemory;
-            
+
             this->hpState = output;
             this->hpLastInput = input;
             return output;
@@ -97,9 +112,9 @@ namespace DSP {
             // evitando cálculos desnecessários.
 
             float signalDifference = this->computeSignalDifference(input, this->lpState);
-            
+
             this->lpState += this->lpCoeff * signalDifference;
-            
+
             return this->lpState;
         }
 
