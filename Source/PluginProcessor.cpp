@@ -19,6 +19,15 @@ FractalDistortionAudioProcessor::createParameterLayout() {
     layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::driveDb, "Drive",
                                                            driveNormalizedRange, driveStartValue));
 
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        ParameterIDs::bias, "Bias", juce::NormalisableRange<float>(-0.5f, 0.5f, 0.01f), 0.0f));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        ParameterIDs::toneHz, "Tone",
+        juce::NormalisableRange<float>(1000.0f, 20000.0f, 1.0f,
+                                       0.3f), // skew para mais precisão em graves
+        16000.0f));
+
     layout.add(std::make_unique<juce::AudioParameterChoice>(
         ParameterIDs::distortionType, "Distortion Type",
         juce::StringArray{"Tube", "Soft Clip", "Hard Clip"}, 0));
@@ -68,6 +77,8 @@ void FractalDistortionAudioProcessor::processBlock(juce::AudioBuffer<float> &buf
     juce::ScopedNoDenormals noDenormals;
 
     const float driveGain = apvts.getRawParameterValue("driveDb")->load();
+    const float bias = apvts.getRawParameterValue(ParameterIDs::bias.getParamID())->load();
+    const float toneHz = apvts.getRawParameterValue(ParameterIDs::toneHz.getParamID())->load();
 
     // Obter os valores de ganho dos parâmetros, convertendo de dB para ganho linear
     const float inGain =
@@ -87,6 +98,8 @@ void FractalDistortionAudioProcessor::processBlock(juce::AudioBuffer<float> &buf
     for (auto &engine : this->distortionEngines) {
         engine.setType(static_cast<DSP::DistortionEngine::Type>(typeIndex));
         engine.setDriveDb(driveGain);
+        engine.setBias(bias);
+        engine.setToneHz(toneHz);
     }
 
     // Aplicar drive

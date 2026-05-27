@@ -65,11 +65,11 @@ namespace FontSizes
     constexpr float SectionTitle = 16.0f;
     /** @brief Tamanho de fonte para títulos de seção maiores (ex: "OUTPUT"). */
     constexpr float SectionTitleLarge = 18.0f;
-    /** @brief Tamanho de fonte para labels de parâmetros (ex: "MODE", "SYNC"). */
-    constexpr float ParameterLabel = 12.0f;
+    /** @brief Tamanho de fonte para labels de parâmetros (ex: "DRIVE"). */
+    constexpr float ParameterLabel = 14.0f;
     
     /** @brief Tamanho de fonte para labels de parâmetros menores ou secundários. */
-    constexpr float ParameterLabelSmall = 10.0f;
+    constexpr float ParameterLabelSmall = 12.0f;
 
 } // namespace FontSizes
 

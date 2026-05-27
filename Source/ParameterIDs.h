@@ -11,4 +11,8 @@ namespace ParameterIDs
 	inline const juce::ParameterID outputGainDb{"outputGainDb", 1};
 
 	inline const juce::ParameterID distortionType{"distortionType", 1};
+
+	inline const juce::ParameterID toneHz{"toneHz", 1};
+
+	inline const juce::ParameterID bias{"bias", 1};
 }

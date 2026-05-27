@@ -44,7 +44,6 @@ namespace
 FractalDistortionAudioProcessorEditor::FractalDistortionAudioProcessorEditor(FractalDistortionAudioProcessor& p)
     : AudioProcessorEditor(&p)
     , audioProcessor(p)
-    , outputPanel(p)
     , distortionPanel(p.getAPVTS())
     , inputGainPanel(p.getAPVTS(), "IN", "IN: ---", ParameterIDs::inputGainDb.getParamID())
     , outputGainPanel(p.getAPVTS(), "OUT", "OUT: ---", ParameterIDs::outputGainDb.getParamID())
@@ -61,8 +60,6 @@ FractalDistortionAudioProcessorEditor::FractalDistortionAudioProcessorEditor(Fra
     centerColumn.addAndMakeVisible(distortionPanel);
     outColumn.addAndMakeVisible(outputGainPanel);
     
-    addAndMakeVisible(outputPanel);
-
     idleTimer = std::make_unique<IdleTimer>(this);
     idleTimer->startTimer(1000 / 30);
 }
@@ -107,9 +104,6 @@ void FractalDistortionAudioProcessorEditor::resized()
     footerBar.setBounds(footerArea);
 
     area.removeFromBottom(kFooterGap);
-
-    auto bottomStrip = area.removeFromBottom(kBottomStripHeight);
-    outputPanel.setBounds(bottomStrip.reduced(6, 6));
 
     const auto bounds = area.reduced(12, 10);
 

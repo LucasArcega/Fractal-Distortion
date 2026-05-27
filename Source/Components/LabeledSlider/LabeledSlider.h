@@ -7,9 +7,10 @@ namespace Common {
     class LabeledSlider : public juce::Component {
     public:
         explicit LabeledSlider(const juce::String& labelText,
+                               const float labelSize = GUI::FontSizes::ParameterLabel,
                                juce::uint32 accentColour = GUI::Colors::AccentOrange)
         {
-            GUI::styleParameterLabel(label, labelText, GUI::Colors::TextPrimary, GUI::FontSizes::ParameterLabel,
+            GUI::styleParameterLabel(label, labelText, GUI::Colors::TextPrimary, labelSize,
                                      juce::Justification::centred);
             addAndMakeVisible(label);
 

@@ -2,7 +2,6 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
-#include "Components/Panels/OutputPanel/OutputPanel.h"
 #include "Components/Panels/DistortionPanel/DistortionPanel.h"
 #include "Components/Widgets/FooterBar/FooterBar.h"
 #include "Components/Widgets/StyleUtils.h"
@@ -31,8 +30,10 @@ private:
 
     FractalDistortionAudioProcessor& audioProcessor;
 
+     // Deve ser declarado antes de qualquer componente que use tooltip
+    juce::TooltipWindow tooltipWindow{this, 500};
+    
     GUI::FooterBar   footerBar;
-    GUI::OutputPanel outputPanel;
     DistortionPanel  distortionPanel;
     
     GainPanel        inputGainPanel;

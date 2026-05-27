@@ -11,9 +11,9 @@ namespace DSP {
         }
 
         void reset() noexcept {
-            hpState = 0.f;
-            hpLastInput = 0.f;
-            lpState = 0.f;
+            this->hpState = 0.f;
+            this->hpLastInput = 0.f;
+            this->lpState = 0.f;
         }
 
         /// <summary>
@@ -22,10 +22,10 @@ namespace DSP {
         /// </summary>
         /// <param name="driveDb">Ganho de drive em decibéis.</param>
         void setDrive(float driveDb) noexcept {
-            driveGain = juce::Decibels::decibelsToGain(driveDb);
+            this->driveGain = juce::Decibels::decibelsToGain(driveDb);
         }
 
-        void setBias(float newBias) noexcept { this->bias = juce::jlimit(-0.5f, 0.5f, newBias); }
+        void setBias(float newBias) noexcept { this->bias = juce::jlimit(0.f, 0.5f, newBias); }
 
         void setToneHz(float hz) noexcept {
             this->toneHz = juce::jlimit(1000.f, 20000.f, hz);
@@ -133,7 +133,7 @@ namespace DSP {
         float driveGain = 1.f;
 
         // Bias para simular a assimetria da válvula, controlando o ponto de operação
-        float bias = 0.f;
+        float bias = 0.02f;
         float toneHz = 16000.f;
 
         float hpAlpha = 0.f;
