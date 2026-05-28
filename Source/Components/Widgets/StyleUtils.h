@@ -219,7 +219,7 @@ inline void styleLinearSlider(juce::Slider& slider,
     slider.setColour(juce::Slider::trackColourId, juce::Colour(accentColour));
     slider.setColour(juce::Slider::thumbColourId, juce::Colour(Colors::TextPrimary));
     slider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::white);
-    slider.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colour(Colors::InputBackground));
+    slider.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
     slider.setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
 }
 

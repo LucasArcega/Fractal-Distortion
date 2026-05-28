@@ -16,6 +16,11 @@ namespace DSP {
         void setType(Type newType) noexcept { this->type = newType; }
 
         void setDriveDb(float db) noexcept {
+
+            // Evita recalcular caso o valor seja praticamente o mesmo (evita artefatos de áudio)
+            if (std::abs(db - driveDb) < 0.001f)
+                return;
+
             this->driveDb = db;
             this->driveGain = juce::Decibels::decibelsToGain(db);
             this->tube.setDrive(db);

@@ -1,8 +1,7 @@
 #include "PluginEditor.h"
 #include "Utils/ConversionUtils.h"
 
-namespace
-{
+namespace {
     /** @brief Altura da faixa inferior com os painéis (Output). */
     constexpr int kBottomStripHeight = 236;
 
@@ -15,12 +14,11 @@ namespace
     /**
      * @brief Layout da coluna central: estica o painel para preencher toda a área.
      */
-    void layoutCenterColumn(juce::Component& column, juce::Component& panel)
-    {
+    void layoutCenterColumn(juce::Component &column, juce::Component &panel) {
         juce::FlexBox fb;
-        fb.flexDirection  = juce::FlexBox::Direction::row;
+        fb.flexDirection = juce::FlexBox::Direction::row;
         fb.justifyContent = juce::FlexBox::JustifyContent::center;
-        fb.alignItems     = juce::FlexBox::AlignItems::stretch;
+        fb.alignItems = juce::FlexBox::AlignItems::stretch;
         fb.items.add(juce::FlexItem(panel).withFlex(1.f));
         fb.performLayout(column.getLocalBounds().toFloat());
     }
@@ -41,13 +39,11 @@ namespace
  *
  * @warning IdleTimer só é iniciado APÓS todos os componentes serem adicionados!
  */
-FractalDistortionAudioProcessorEditor::FractalDistortionAudioProcessorEditor(FractalDistortionAudioProcessor& p)
-    : AudioProcessorEditor(&p)
-    , audioProcessor(p)
-    , distortionPanel(p.getAPVTS())
-    , inputGainPanel(p.getAPVTS(), "IN", "IN: ---", ParameterIDs::inputGainDb.getParamID())
-    , outputGainPanel(p.getAPVTS(), "OUT", "OUT: ---", ParameterIDs::outputGainDb.getParamID())
-{
+FractalDistortionAudioProcessorEditor::FractalDistortionAudioProcessorEditor(
+    FractalDistortionAudioProcessor &p)
+    : AudioProcessorEditor(&p), audioProcessor(p), distortionPanel(p.getAPVTS()),
+      inputGainPanel(p.getAPVTS(), "IN", "IN: ---", ParameterIDs::inputGainDb.getParamID()),
+      outputGainPanel(p.getAPVTS(), "OUT", "OUT: ---", ParameterIDs::outputGainDb.getParamID()) {
     setSize(960, 684);
 
     addAndMakeVisible(footerBar);
@@ -59,23 +55,21 @@ FractalDistortionAudioProcessorEditor::FractalDistortionAudioProcessorEditor(Fra
     inColumn.addAndMakeVisible(inputGainPanel);
     centerColumn.addAndMakeVisible(distortionPanel);
     outColumn.addAndMakeVisible(outputGainPanel);
-    
+
     idleTimer = std::make_unique<IdleTimer>(this);
-    idleTimer->startTimer(1000 / 30);
+    idleTimer->startTimer(300);
 }
 
-FractalDistortionAudioProcessorEditor::~FractalDistortionAudioProcessorEditor()
-{
+FractalDistortionAudioProcessorEditor::~FractalDistortionAudioProcessorEditor() {
     idleTimer->stopTimer();
 }
 
-void FractalDistortionAudioProcessorEditor::paint(juce::Graphics& g)
-{
+void FractalDistortionAudioProcessorEditor::paint(juce::Graphics &g) {
     g.fillAll(juce::Colour(0xff0e1015));
 
     const int footerY = footerBar.getY();
     g.setColour(juce::Colour(0xffb388ff).withAlpha(0.35f));
-    g.drawHorizontalLine(footerY, 0.f, (float) getWidth());
+    g.drawHorizontalLine(footerY, 0.f, (float)getWidth());
 }
 
 /**
@@ -96,8 +90,7 @@ void FractalDistortionAudioProcessorEditor::paint(juce::Graphics& g)
  * @note Fr (fractions) em JUCE 8 são INTEIROS, não floats.
  *       Fr(100) + Fr(145) + Fr(100) = proporção 100:145:100
  */
-void FractalDistortionAudioProcessorEditor::resized()
-{
+void FractalDistortionAudioProcessorEditor::resized() {
     auto area = getLocalBounds();
 
     auto footerArea = area.removeFromBottom(kFooterHeight);
@@ -109,11 +102,11 @@ void FractalDistortionAudioProcessorEditor::resized()
 
     juce::Grid grid;
     using Track = juce::Grid::TrackInfo;
-    using Fr    = juce::Grid::Fr;
-    using Px    = juce::Grid::Px;
+    using Fr = juce::Grid::Fr;
+    using Px = juce::Grid::Px;
 
-    grid.templateRows    = { Track(Fr(1)) };
-    grid.templateColumns = { Track(Fr(100)), Track(Fr(145)), Track(Fr(100)) };
+    grid.templateRows = {Track(Fr(1))};
+    grid.templateColumns = {Track(Fr(100)), Track(Fr(145)), Track(Fr(100))};
     grid.columnGap = Px(10);
 
     grid.items = {
@@ -124,14 +117,13 @@ void FractalDistortionAudioProcessorEditor::resized()
 
     grid.performLayout(bounds);
 
-    inputGainPanel.setBounds(inColumn.getLocalBounds());
+    inputGainPanel.setBounds(inColumn.getLocalBounds().reduced(24).withHeight(inColumn.getHeight() / 2));
     layoutCenterColumn(centerColumn, distortionPanel);
-    outputGainPanel.setBounds(outColumn.getLocalBounds());
+    outputGainPanel.setBounds(
+        outColumn.getLocalBounds().reduced(24).withHeight(inColumn.getHeight() / 2));
 }
 
-void FractalDistortionAudioProcessorEditor::idle()
-{
+void FractalDistortionAudioProcessorEditor::idle() {
     inputGainPanel.updatePeakLabel(audioProcessor.getPeakInputLinear());
     outputGainPanel.updatePeakLabel(audioProcessor.getPeakOutputLinear());
 }
-

@@ -15,4 +15,6 @@ namespace ParameterIDs
 	inline const juce::ParameterID toneHz{"toneHz", 1};
 
 	inline const juce::ParameterID bias{"bias", 1};
+
+	inline const juce::ParameterID mix{"mix", 1};
 }

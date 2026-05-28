@@ -6,27 +6,33 @@
 // interface do usuário.
 juce::AudioProcessorValueTreeState::ParameterLayout
 FractalDistortionAudioProcessor::createParameterLayout() {
-    const auto range = juce::NormalisableRange<float>(-60.f, 12.f, 0.1f, 0.45f);
+    const auto gainRange = juce::NormalisableRange<float>(-60.f, 12.f, 0.1f, 0.45f);
     const float defaultGainValue = 0.f;
     const auto driveNormalizedRange = juce::NormalisableRange<float>(0.0f, 36.0f, 0.1f, 0.45f);
     const float driveStartValue = 2.f;
+    const auto mixRange = juce::NormalisableRange<float>(0.f, 1.f, 0.01f, 1.f);
 
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::inputGainDb, "Input",
-                                                           range, defaultGainValue));
+                                                           gainRange, defaultGainValue));
     layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::outputGainDb, "Output",
-                                                           range, defaultGainValue));
+                                                           gainRange, defaultGainValue));
     layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::driveDb, "Drive",
                                                            driveNormalizedRange, driveStartValue));
 
+    layout.add(std::make_unique<juce::AudioParameterFloat>(ParameterIDs::mix, "Mix", mixRange, 1.f,
+        juce::AudioParameterFloatAttributes().withStringFromValueFunction(fractal_utils::normalizedToPercent)));
+
     layout.add(std::make_unique<juce::AudioParameterFloat>(
-        ParameterIDs::bias, "Bias", juce::NormalisableRange<float>(-0.5f, 0.5f, 0.01f), 0.0f));
+        ParameterIDs::bias, "Bias", juce::NormalisableRange<float>(0.f, 0.5f, 0.01f), 0.0f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         ParameterIDs::toneHz, "Tone",
         juce::NormalisableRange<float>(1000.0f, 20000.0f, 1.0f,
                                        0.3f), // skew para mais precisão em graves
-        16000.0f));
+        16000.0f,
+        juce::AudioParameterFloatAttributes().withStringFromValueFunction(
+            fractal_utils::frequencyToText)));
 
     layout.add(std::make_unique<juce::AudioParameterChoice>(
         ParameterIDs::distortionType, "Distortion Type",
@@ -86,12 +92,20 @@ void FractalDistortionAudioProcessor::processBlock(juce::AudioBuffer<float> &buf
     const float outGain =
         juce::Decibels::decibelsToGain(apvts.getRawParameterValue("outputGainDb")->load());
 
+    const float mix = apvts.getRawParameterValue(ParameterIDs::mix.getParamID())->load();
+    
+    const float dryGain = 1.0f - mix;
+    const float wetGain = mix;
+
     const int typeIndex = static_cast<int>(
         apvts.getRawParameterValue(ParameterIDs::distortionType.getParamID())->load());
 
     buffer.applyGain(inGain);
     // Atualizar o pico de entrada antes de aplicar a distorção
     peakInputLinear.store(buffer.getMagnitude(0, buffer.getNumSamples()));
+
+    // Faz cópia do buffer original para usar como sinal seco (dry) na mistura dry/wet
+    juce::AudioBuffer<float> dryBuffer(buffer);
 
     // Configurar todas as engines de distorção para o ganho de drive atual
 
@@ -111,6 +125,15 @@ void FractalDistortionAudioProcessor::processBlock(juce::AudioBuffer<float> &buf
         for (int sample = 0; sample < buffer.getNumSamples(); ++sample) {
             samples[sample] = engine.processSample(samples[sample]);
         }
+    }
+
+    // Blend dry/wet: output = dry * (1 - mix) + wet * mix
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel) {
+        auto *wet = buffer.getWritePointer(channel);
+        const auto *dry = dryBuffer.getReadPointer(channel);
+
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+            wet[sample] = dry[sample] * dryGain + wet[sample] * wetGain;
     }
 
     buffer.applyGain(outGain);

@@ -7,11 +7,14 @@
 class DistortionPanel : public juce::Component {
 public:
     explicit DistortionPanel(juce::AudioProcessorValueTreeState &state)
-        : driveControl("Drive"), biasControl("Bias"), toneControl("Tone") {
+        : driveControl("Drive"), biasControl("Bias"), toneControl("Tone"), mixControl("Mix")
+    {
         addAndMakeVisible(driveControl);
         addAndMakeVisible(biasControl);
         addAndMakeVisible(toneControl);
-        // Conectar ao parâmetro
+        addAndMakeVisible(mixControl);
+
+        // Conectar aos parâmetros
         driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
             state, ParameterIDs::driveDb.getParamID(), driveControl.getSlider());
 
@@ -21,6 +24,10 @@ public:
         toneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
             state, ParameterIDs::toneHz.getParamID(), toneControl.getSlider());
 
+        mixAttachment = std::make_unique<AudioProcessorValueTreeState::SliderAttachment>(
+            state, ParameterIDs::mix.getParamID(), mixControl.getSlider());
+
+        GUI::styleComboBox(typeCombo);
         typeCombo.addItem("Tube", 1);
         typeCombo.addItem("Soft Clip", 2);
         typeCombo.addItem("Hard Clip", 3);
@@ -41,6 +48,7 @@ public:
         rowOthers.justifyContent = juce::FlexBox::JustifyContent::spaceBetween;
         rowOthers.items.add(juce::FlexItem(biasControl).withFlex(1.f));
         rowOthers.items.add(juce::FlexItem(toneControl).withFlex(1.f));
+        rowOthers.items.add(juce::FlexItem(mixControl).withFlex(1.f));
 
         // Define a flexBox Principal, em column layout, onde o primeiro item é o comboBox, o
         // segundo é o driveControl e o terceiro é a rowOthers (bias e tone)
@@ -64,6 +72,9 @@ private:
 
     Common::LabeledSlider toneControl;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> toneAttachment;
+
+    Common::LabeledSlider mixControl;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAttachment;
 
     juce::ComboBox typeCombo;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> typeAttachment;
